@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<!-- saved from url=(0042)https://tab.gladly.io/newtab/auth/?app=tab -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no"><meta name="theme-color" content="#000000"><link rel="manifest" href="https://tab.gladly.io/newtab/manifest.json"><script src="./Sign in - Tab for a Cause - Tab for a Cause_files/quant.js.download" async="" type="text/javascript"></script><script src="./Sign in - Tab for a Cause - Tab for a Cause_files/rules-p-FPBLJYpJgR9Zu.js.download" async=""></script><script src="./Sign in - Tab for a Cause - Tab for a Cause_files/quant.js.download" async="" type="text/javascript"></script><script async="" src="./Sign in - Tab for a Cause - Tab for a Cause_files/apstag.js.download"></script><script src="./Sign in - Tab for a Cause - Tab for a Cause_files/pixel.js.download" async=""></script><script src="./Sign in - Tab for a Cause - Tab for a Cause_files/1813501258922708" async=""></script><script async="" src="./Sign in - Tab for a Cause - Tab for a Cause_files/fbevents.js.download"></script><script type="text/javascript">window.runAnalyticsScripts=!0;try{window.runAnalyticsScripts="ReactSnap"!==navigator.userAgent}catch(n){console.error(n)}</script><style>body,html{padding:0;margin:0}html{min-height:100%;position:relative}iframe{border-width:0!important}</style><!--<base target="_top">--><base href="." target="_top"><script src="./Sign in - Tab for a Cause - Tab for a Cause_files/geoip2.js.download" type="text/javascript"></script><script type="text/javascript" async="true">// Gladly modified: add try/catch.
+    try {
+      (function() {
+        // Gladly modified: create window object.
+        window.tabCMP = window.tabCMP || {
+          uspStubFunction: undefined
+        }
+
+        // Gladly modified: don't load the QC Choice script.
+        // We'll import it ourselves.
+        // var host = window.location.hostname;
+        // var element = document.createElement('script');
+        // var firstScript = document.getElementsByTagName('script')[0];
+        // var url = 'https://quantcast.mgr.consensu.org'
+        //   .concat('/choice/', 'FPBLJYpJgR9Zu', '/', host, '/choice.js')
+        var uspTries = 0;
+        var uspTriesLimit = 3;
+        // element.async = true;
+        // element.type = 'text/javascript';
+        // element.src = url;
+
+        // firstScript.parentNode.insertBefore(element, firstScript);
+
+        // Gladly modified.
+        // Add debug logging.
+        let debug = false
+        try {
+          const urlStr = window.location.href
+          const url = new URL(urlStr)
+          const tabCMPDebug = url.searchParams.get('tabCMPDebug')
+          debug = tabCMPDebug === 'true'
+        } catch (e) {}
+        const logPrefix = [
+              '%ctab-cmp',
+              'background: #7c7c7c; color: #fff; border-radius: 2px; padding: 2px 6px',
+              '[head script]'
+            ]
+        const logDebugging = (...args) => {
+          if (debug) {
+            console.log(...logPrefix, ...args)
+          }
+        }
+
+        function makeStub() {
+          var TCF_LOCATOR_NAME = '__tcfapiLocator';
+          var queue = [];
+          var win = window;
+          var cmpFrame;
+
+          function addFrame() {
+            var doc = win.document;
+            var otherCMP = !!(win.frames[TCF_LOCATOR_NAME]);
+
+            if (!otherCMP) {
+              if (doc.body) {
+                var iframe = doc.createElement('iframe');
+
+                iframe.style.cssText = 'display:none';
+                iframe.name = TCF_LOCATOR_NAME;
+                doc.body.appendChild(iframe);
+              } else {
+                setTimeout(addFrame, 5);
+              }
+            }
+            return !otherCMP;
+          }
+
+          function tcfAPIHandler() {
+            var gdprApplies;
+            var args = arguments;
+
+            // Gladly modified.
+            try {
+              if (!args.length) {
+                return queue
+              }
+              // Our modified code should handle some API calls for TCF v2.
+              const cmd = args[0]
+              const shouldHandle =
+                ['getTCData', 'ping', 'addEventListener', 'removeEventListener'].indexOf(cmd) > -1 &&
+                args[1] === 2 &&
+                typeof args[2] === 'function'
+              if (shouldHandle) {
+                if (cmd === 'removeEventListener') {
+                  // Our stubbed "addEventListener" logic doesn't add a
+                  // listener, so we don't need to remove anything.
+                  logDebugging(`Handled TCF API call "removeEventListener" by taking no action.`)
+                  return
+                } else {
+                  // This item is set and updated in tab-cmp.
+                  const storedTCFData = JSON.parse(localStorage.getItem('tabCMP.tcfv2.data'))
+                  if (storedTCFData) {
+                    const cb = args[2]
+                    const data = {
+                      ...storedTCFData,
+                      // Google Ad Manager will consider the CMP failed if the
+                      // "addEventListener" response doesn't contain a listenerId
+                      // value, which is null in the response to "getTCData".
+                      ...(cmd === 'addEventListener' && {
+                        listenerId: 1, // a fake ID our stub won't use
+                      }) 
+                    }
+                    logDebugging(`Responding to modified TCF API call "${cmd}" with TCF data:`, data)
+                    cb(data, true)
+                    return
+                  } else {
+                    logDebugging(`No stored TCF data. Modified TCF stub is not handling a call to "${cmd}"`)
+                  }
+                }
+              } else {
+                logDebugging(`Modified TCF stub is not handling a call to "${cmd}".`)
+              }
+            } catch (e) {
+              console.error('[tab-cmp]', e)
+            }
+
+            if (!args.length) {
+              return queue;
+            } else if (args[0] === 'setGdprApplies') {
+              if (
+                args.length > 3 &&
+                args[2] === 2 &&
+                typeof args[3] === 'boolean'
+              ) {
+                gdprApplies = args[3];
+                if (typeof args[2] === 'function') {
+                  args[2]('set', true);
+                }
+              }
+            } else if (args[0] === 'ping') {
+              var retr = {
+                gdprApplies: gdprApplies,
+                cmpLoaded: false,
+                cmpStatus: 'stub'
+              };
+
+              if (typeof args[2] === 'function') {
+                args[2](retr);
+              }
+            } else {
+              queue.push(args);
+            }
+          }
+
+          function postMessageEventHandler(event) {
+            var msgIsString = typeof event.data === 'string';
+            var json = {};
+
+            try {
+              if (msgIsString) {
+                json = JSON.parse(event.data);
+              } else {
+                json = event.data;
+              }
+            } catch (ignore) {}
+
+            var payload = json.__tcfapiCall;
+
+            if (payload) {
+              window.__tcfapi(
+                payload.command,
+                payload.version,
+                function(retValue, success) {
+                  var returnMsg = {
+                    __tcfapiReturn: {
+                      returnValue: retValue,
+                      success: success,
+                      callId: payload.callId
+                    }
+                  };
+                  if (msgIsString) {
+                    returnMsg = JSON.stringify(returnMsg);
+                  }
+                  event.source.postMessage(returnMsg, '*');
+                },
+                payload.parameter
+              );
+            }
+          }
+
+          // Gladly modified:
+          // Don't try to use the parent frame, which may be the
+          // new tab page.
+          try {
+            if (win.frames[TCF_LOCATOR_NAME]) {
+              cmpFrame = win;
+            }
+          } catch (ignore) {}
+
+          // while (win) {
+          //   try {
+          //     if (win.frames[TCF_LOCATOR_NAME]) {
+          //       cmpFrame = win;
+          //       break;
+          //     }
+          //   } catch (ignore) {}
+          // 
+          //   if (win === window.top) {
+          //     break;
+          //   }
+          //   win = win.parent;
+          // }
+
+          if (!cmpFrame) {
+            addFrame();
+            win.__tcfapi = tcfAPIHandler;
+            win.addEventListener('message', postMessageEventHandler, false);
+          }
+        };
+
+        makeStub();
+
+        var uspStubFunction = function() {
+          var arg = arguments;
+
+          // Gladly modified.
+          try {
+            if (!arg.length) {
+              return queue
+            }
+            // Our modified code should handle some API calls for USP v1.
+            const cmd = arg[0]
+            const shouldHandle =
+              ['getUSPData', 'uspPing'].indexOf(cmd) > -1 &&
+              arg[1] === 1 &&
+              typeof arg[2] === 'function'
+            if (shouldHandle) {
+              // These items are set and updated in tab-cmp.
+              if (cmd === 'getUSPData') {
+                const storedUSPData = JSON.parse(localStorage.getItem('tabCMP.usp.data'))
+                if (storedUSPData) {
+                  const cb = arg[2]
+                  logDebugging(`Responding to modified USP API call "${cmd}" with stored USP data:`, storedUSPData)
+                  cb(storedUSPData, true)
+                  return
+                } else {
+                  logDebugging(`No stored USP data. Modified USP stub is not handling a call to "${cmd}"`)
+                }
+              } else if (cmd === 'uspPing') {
+                const storedUSPPingData = JSON.parse(localStorage.getItem('tabCMP.uspPing.data'))
+                if (storedUSPPingData) {
+                  const cb = arg[2]
+                  logDebugging(`Responding to modified USP API call "${cmd}" with stored USP ping data:`, storedUSPPingData)
+                  cb(storedUSPPingData, true)
+                  return
+                } else {
+                  logDebugging(`No stored USP data. Modified USP stub is not handling a call to "${cmd}"`)
+                }
+              }
+            } else {
+              logDebugging(`Modified USP stub is not handling a call to "${cmd}".`)
+            }
+          } catch (e) {
+            console.error('[tab-cmp]', e)
+          }
+
+          if (typeof window.__uspapi !== uspStubFunction) {
+            setTimeout(function() {
+              if (typeof window.__uspapi !== 'undefined') {
+                window.__uspapi.apply(window.__uspapi, arg);
+              }
+            }, 500);
+          }
+        };
+
+        // Gladly modified: store the stub function so we know when
+        // Quantcast Choice has finished initializing.
+        window.tabCMP.uspStubFunction = uspStubFunction
+
+        var checkIfUspIsReady = function() {
+          uspTries++;
+          if (window.__uspapi === uspStubFunction && uspTries < uspTriesLimit) {
+            // Gladly modified: add [tab-cmp] prefix.
+            console.error(...logPrefix, 'USP is not accessible.');
+          } else {
+            clearInterval(uspInterval);
+          }
+        };
+
+        if (typeof window.__uspapi === 'undefined') {
+          window.__uspapi = uspStubFunction;
+          var uspInterval = setInterval(checkIfUspIsReady, 6000);
+        }
+      })();
+    } catch (e) {
+      console.error('[tab-cmp] Head tag errored:', e);
+    }</script><script async="" src="./Sign in - Tab for a Cause - Tab for a Cause_files/js"></script><script>function gtag(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],gtag("js",new Date),gtag("config","G-LDFLQCKVHG"),gtag("config","G-LDFLQCKVHG",{tfac_app_version:"legacy"})</script><script>try{window.runAnalyticsScripts&&(!function(e,n,t,c,o,s,r){e.fbq||(o=e.fbq=function(){o.callMethod?o.callMethod.apply(o,arguments):o.queue.push(arguments)},e._fbq||(e._fbq=o),(o.push=o).loaded=!0,o.version="2.0",o.queue=[],(s=n.createElement(t)).async=!0,s.src="https://connect.facebook.net/en_US/fbevents.js",(r=n.getElementsByTagName(t)[0]).parentNode.insertBefore(s,r))}(window,document,"script"),fbq("init","1813501258922708"))}catch(e){console.error(e)}</script><noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1813501258922708&ev=PageView&noscript=1"/></noscript><script>try{window.runAnalyticsScripts&&(!function(t,e){if(!t.rdt){var n=t.rdt=function(){n.sendEvent?n.sendEvent.apply(n,arguments):n.callQueue.push(arguments)};n.callQueue=[];var r=e.createElement("script");r.src="https://www.redditstatic.com/ads/pixel.js",r.async=!0;var c=e.getElementsByTagName("script")[0];c.parentNode.insertBefore(r,c)}}(window,document),rdt("init","t2_9btvy"))}catch(t){console.error(t)}</script><link href="./Sign in - Tab for a Cause - Tab for a Cause_files/8.57141921.chunk.css" rel="stylesheet"><link href="./Sign in - Tab for a Cause - Tab for a Cause_files/index.cd016ff2.chunk.css" rel="stylesheet"><script async="" type="text/javascript" src="./Sign in - Tab for a Cause - Tab for a Cause_files/gpt.js.download"></script><meta http-equiv="origin-trial" content="Az6AfRvI8mo7yiW5fLfj04W21t0ig6aMsGYpIqMTaX60H+b0DkO1uDr+7BrzMcimWzv/X7SXR8jI+uvbV0IJlwYAAACFeyJvcmlnaW4iOiJodHRwczovL2RvdWJsZWNsaWNrLm5ldDo0NDMiLCJmZWF0dXJlIjoiUHJpdmFjeVNhbmRib3hBZHNBUElzIiwiZXhwaXJ5IjoxNjgwNjUyNzk5LCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ=="><meta http-equiv="origin-trial" content="A+USTya+tNvDPaxUgJooz+LaVk5hPoAxpLvSxjogX4Mk8awCTQ9iop6zJ9d5ldgU7WmHqBlnQB41LHHRFxoaBwoAAACLeyJvcmlnaW4iOiJodHRwczovL2dvb2dsZXN5bmRpY2F0aW9uLmNvbTo0NDMiLCJmZWF0dXJlIjoiUHJpdmFjeVNhbmRib3hBZHNBUElzIiwiZXhwaXJ5IjoxNjgwNjUyNzk5LCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ=="><meta http-equiv="origin-trial" content="A7FovoGr67TUBYbnY+Z0IKoJbbmRmB8fCyirUGHavNDtD91CiGyHHSA2hDG9r9T3NjUKFi6egL3RbgTwhhcVDwUAAACLeyJvcmlnaW4iOiJodHRwczovL2dvb2dsZXRhZ3NlcnZpY2VzLmNvbTo0NDMiLCJmZWF0dXJlIjoiUHJpdmFjeVNhbmRib3hBZHNBUElzIiwiZXhwaXJ5IjoxNjgwNjUyNzk5LCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ=="><script src="./Sign in - Tab for a Cause - Tab for a Cause_files/pubads_impl_2022111001.js.download" async=""></script><title>Sign in - Tab for a Cause - Tab for a Cause</title><link rel="icon" href="https://tab.gladly.io/newtab/static/media/favicon.383ee514.ico" data-react-helmet="true"><link rel="preload" href="./Sign in - Tab for a Cause - Tab for a Cause_files/f.txt" as="script"><script type="text/javascript" src="./Sign in - Tab for a Cause - Tab for a Cause_files/f.txt"></script><style type="text/css"></style><link rel="stylesheet" type="text/css" href="./Sign in - Tab for a Cause - Tab for a Cause_files/13.c2601247.chunk.css"><script charset="utf-8" src="./Sign in - Tab for a Cause - Tab for a Cause_files/13.3b057ac7.chunk.js.download"></script><script charset="utf-8" src="./Sign in - Tab for a Cause - Tab for a Cause_files/15.41419c2d.chunk.js.download"></script><style data-jss="" data-meta="MuiTypography">
+.jss37 {
+  margin: 0;
+  display: block;
+}
+.jss38 {
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 7rem;
+  font-weight: 300;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  line-height: 1.14286em;
+  margin-left: -.04em;
+  letter-spacing: -.04em;
+}
+.jss39 {
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 3.5rem;
+  font-weight: 400;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  line-height: 1.30357em;
+  margin-left: -.02em;
+  letter-spacing: -.02em;
+}
+.jss40 {
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 2.8125rem;
+  font-weight: 400;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  line-height: 1.13333em;
+  margin-left: -.02em;
+}
+.jss41 {
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 2.125rem;
+  font-weight: 400;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  line-height: 1.20588em;
+}
+.jss42 {
+  color: rgba(0, 0, 0, 0.87);
+  font-size: 1.5rem;
+  font-weight: 400;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  line-height: 1.35417em;
+}
+.jss43 {
+  color: rgba(0, 0, 0, 0.87);
+  font-size: 1.3125rem;
+  font-weight: 500;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  line-height: 1.7em;
+}
+.jss44 {
+  color: rgba(0, 0, 0, 0.87);
+  font-size: 1rem;
+  font-weight: 400;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  line-height: 1.16667em;
+}
+.jss45 {
+  color: rgba(0, 0, 0, 0.87);
+  font-size: 0.875rem;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  line-height: 1.3;
+}
+.jss46 {
+  color: rgba(0, 0, 0, 0.87);
+  font-size: 1rem;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.jss47 {
+  color: rgba(0, 0, 0, 0.87);
+  font-size: 0.75rem;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  line-height: 1.66;
+}
+.jss48 {
+  color: rgba(0, 0, 0, 0.87);
+  font-size: 0.875rem;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  line-height: 1.75;
+  text-transform: uppercase;
+}
+.jss49 {
+  color: rgba(0, 0, 0, 0.87);
+  font-size: 6rem;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 300;
+  line-height: 1;
+}
+.jss50 {
+  color: rgba(0, 0, 0, 0.87);
+  font-size: 3.75rem;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 300;
+  line-height: 1;
+}
+.jss51 {
+  color: rgba(0, 0, 0, 0.87);
+  font-size: 3rem;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  line-height: 1.04;
+}
+.jss52 {
+  color: rgba(0, 0, 0, 0.87);
+  font-size: 2.125rem;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  line-height: 1.17;
+}
+.jss53 {
+  color: rgba(0, 0, 0, 0.87);
+  font-size: 1.5rem;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  line-height: 1.24;
+}
+.jss54 {
+  color: rgba(0, 0, 0, 0.87);
+  font-size: 1.25rem;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  line-height: 1.6;
+}
+.jss55 {
+  color: rgba(0, 0, 0, 0.87);
+  font-size: 1rem;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  line-height: 1.75;
+}
+.jss56 {
+  color: rgba(0, 0, 0, 0.87);
+  font-size: 0.875rem;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  line-height: 1.57;
+}
+.jss57 {
+  color: rgba(0, 0, 0, 0.87);
+  font-size: 0.75rem;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  line-height: 2.66;
+  text-transform: uppercase;
+}
+.jss58 {
+  width: 1px;
+  height: 1px;
+  position: absolute;
+  overflow: hidden;
+}
+.jss59 {
+  text-align: left;
+}
+.jss60 {
+  text-align: center;
+}
+.jss61 {
+  text-align: right;
+}
+.jss62 {
+  text-align: justify;
+}
+.jss63 {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.jss64 {
+  margin-bottom: 0.35em;
+}
+.jss65 {
+  margin-bottom: 16px;
+}
+.jss66 {
+  color: inherit;
+}
+.jss67 {
+  color: #9d4ba3;
+}
+.jss68 {
+  color: #4a90e2;
+}
+.jss69 {
+  color: rgba(0, 0, 0, 0.87);
+}
+.jss70 {
+  color: rgba(0, 0, 0, 0.54);
+}
+.jss71 {
+  color: #f44336;
+}
+.jss72 {
+  display: inline;
+}
+</style></head><body data-new-gr-c-s-check-loaded="14.1087.0" data-gr-ext-installed=""><noscript>You need to enable JavaScript to run this app.</noscript><div id="root"><div style="position: absolute; inset: 0px; margin: 0px; padding: 0px; border: none;"><div style="position: absolute; inset: 0px; margin: 0px; padding: 0px; border: none; background-color: rgb(18, 18, 18);"><span data-test-id="authentication-page" style="display: flex; flex-direction: column; align-items: center; height: 100%; width: 100%; background-color: rgb(250, 250, 250);"><div style="padding: 20px 40px; position: absolute; top: 0px; left: 0px;"><img src="./Sign in - Tab for a Cause - Tab for a Cause_files/logo-with-text.257bbffc.svg" style="height: 40px;"></div><span style="display: flex; flex-direction: column; flex: 1 1 0%; align-self: stretch; justify-content: center; align-items: center;"><span style="flex: 1 1 0%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;"><div data-test-id="logged-out-message" style="background-color: rgb(255, 244, 229); padding: 6px 16px; margin-bottom: 6px;"><p class="jss37 jss45" style="display: flex; align-items: center; justify-content: center; color: rgb(102, 60, 0);"><svg viewBox="0 0 24 24" style="display: inline-block; color: rgb(102, 60, 0); fill: currentcolor; height: 24px; width: 24px; user-select: none; transition: all 450ms cubic-bezier(0.23, 1, 0.32, 1) 0ms; padding-right: 6px;"><path d="M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"></path></svg><span>Heads up: you’ll need to sign in to keep raising money for great causes!</span></p></div><span><div id="firebaseui_container" lang="en"><div class="firebaseui-container firebaseui-page-provider-sign-in firebaseui-id-page-provider-sign-in firebaseui-use-spinner"><div class="firebaseui-card-content"><form onsubmit="return false;"><ul class="firebaseui-idp-list"><li class="firebaseui-list-item"><button class="firebaseui-idp-button mdl-button mdl-js-button mdl-button--raised firebaseui-idp-google firebaseui-id-idp-button" data-provider-id="google.com" style="background-color:#ffffff" data-upgraded=",MaterialButton"><span class="firebaseui-idp-icon-wrapper"><img class="firebaseui-idp-icon" alt="" src="./Sign in - Tab for a Cause - Tab for a Cause_files/google.svg"></span><span class="firebaseui-idp-text firebaseui-idp-text-long">Sign in with Google</span><span class="firebaseui-idp-text firebaseui-idp-text-short">Google</span></button></li><li class="firebaseui-list-item"><button class="firebaseui-idp-button mdl-button mdl-js-button mdl-button--raised firebaseui-idp-facebook firebaseui-id-idp-button" data-provider-id="facebook.com" style="background-color:#3b5998" data-upgraded=",MaterialButton"><span class="firebaseui-idp-icon-wrapper"><img class="firebaseui-idp-icon" alt="" src="./Sign in - Tab for a Cause - Tab for a Cause_files/facebook.svg"></span><span class="firebaseui-idp-text firebaseui-idp-text-long">Sign in with Facebook</span><span class="firebaseui-idp-text firebaseui-idp-text-short">Facebook</span></button></li><li class="firebaseui-list-item"><button class="firebaseui-idp-button mdl-button mdl-js-button mdl-button--raised firebaseui-idp-password firebaseui-id-idp-button" data-provider-id="password" style="background-color:#db4437" data-upgraded=",MaterialButton"><span class="firebaseui-idp-icon-wrapper"><img class="firebaseui-idp-icon" alt="" src="./Sign in - Tab for a Cause - Tab for a Cause_files/mail.svg"></span><span class="firebaseui-idp-text firebaseui-idp-text-long">Sign in with email</span><span class="firebaseui-idp-text firebaseui-idp-text-short">Email</span></button></li><li class="firebaseui-list-item"><button class="firebaseui-idp-button mdl-button mdl-js-button mdl-button--raised firebaseui-idp-generic firebaseui-id-idp-button" data-provider-id="apple.com" style="background-color:#000000" data-upgraded=",MaterialButton"><span class="firebaseui-idp-icon-wrapper"><img class="firebaseui-idp-icon" alt="" src="./Sign in - Tab for a Cause - Tab for a Cause_files/apple.png"></span><span class="firebaseui-idp-text firebaseui-idp-text-long">Sign in with Apple</span><span class="firebaseui-idp-text firebaseui-idp-text-short">Apple</span></button></li></ul></form></div><div class="firebaseui-card-footer firebaseui-provider-sign-in-footer"><p class="firebaseui-tos firebaseui-tospp-full-message">By continuing, you are indicating that you accept our <a href="javascript:void(0)" class="firebaseui-link firebaseui-tos-link" target="_blank">Terms of Service</a> and <a href="javascript:void(0)" class="firebaseui-link firebaseui-pp-link" target="_blank">Privacy Policy</a>.</p></div></div></div></span></span><span data-test-id="endorsement-quote" style="color: rgba(33, 33, 33, 0.82); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-weight: 500; line-height: 1.1; text-align: center; padding: 10px;"><h1>"One of the simplest ways to raise money"</h1><p style="color: rgb(131, 131, 131); font-weight: 400;">- USA Today</p></span></span></span></div></div></div><script type="text/javascript">/* eslint-disable */
+      // Google Tag Manager
+      var googletag = window.googletag || {}
+      googletag.cmd = googletag.cmd || []
+      googletag.cmd.push(() => {
+        googletag.pubads().disableInitialLoad()
+        googletag.pubads().setTagForChildDirectedTreatment(0)
+      })
+
+      var gads = document.createElement('script')
+      gads.async = true
+      gads.type = 'text/javascript'
+      var useSSL = document.location.protocol === 'https:'
+      gads.src = (useSSL ? 'https:' : 'http:') +
+        '//www.googletagservices.com/tag/js/gpt.js'
+      var head = document.getElementsByTagName('head')[0]
+      head.appendChild(gads)</script><script>try{!function(e,a,t,n,c,s,i){function o(t,n){a[e]._Q.push([t,n])}a[e]||(a[e]={init:function(){o("i",arguments)},fetchBids:function(){o("f",arguments)},setDisplayBids:function(){},targetingKeys:function(){return[]},_Q:[]},(s=t.createElement(n)).async=!0,s.src="//c.amazon-adsystem.com/aax2/apstag.js",(i=t.getElementsByTagName(n)[0]).parentNode.insertBefore(s,i))}("apstag",window,document,"script")}catch(t){console.error(t)}</script><script async="" src="./Sign in - Tab for a Cause - Tab for a Cause_files/189508-208262485043658.js.download"></script><script type="text/javascript">window._qevents=window._qevents||[],function(){var e=document.createElement("script");e.src=("https:"==document.location.protocol?"https://secure":"http://edge")+".quantserve.com/quant.js",e.async=!0,e.type="text/javascript";var t=document.getElementsByTagName("script")[0];t.parentNode.insertBefore(e,t)}(),window._qevents.push({qacct:"p-FPBLJYpJgR9Zu",uid:"__INSERT_EMAIL_HERE__"})</script><noscript><div style="display:none"><img src="//pixel.quantserve.com/pixel/p-FPBLJYpJgR9Zu.gif" border="0" height="1" width="1" alt="Quantcast"/></div></noscript><script>!function(a){function e(e){for(var r,t,n=e[0],o=e[1],u=e[2],l=0,i=[];l<n.length;l++)t=n[l],p[t]&&i.push(p[t][0]),p[t]=0;for(r in o)Object.prototype.hasOwnProperty.call(o,r)&&(a[r]=o[r]);for(s&&s(e);i.length;)i.shift()();return c.push.apply(c,u||[]),f()}function f(){for(var e,r=0;r<c.length;r++){for(var t=c[r],n=!0,o=1;o<t.length;o++){var u=t[o];0!==p[u]&&(n=!1)}n&&(c.splice(r--,1),e=l(l.s=t[0]))}return e}var t={},p={6:0},c=[];function l(e){if(t[e])return t[e].exports;var r=t[e]={i:e,l:!1,exports:{}};return a[e].call(r.exports,r,r.exports,l),r.l=!0,r.exports}l.m=a,l.c=t,l.d=function(e,r,t){l.o(e,r)||Object.defineProperty(e,r,{enumerable:!0,get:t})},l.r=function(e){"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(e,"__esModule",{value:!0})},l.t=function(r,e){if(1&e&&(r=l(r)),8&e)return r;if(4&e&&"object"==typeof r&&r&&r.__esModule)return r;var t=Object.create(null);if(l.r(t),Object.defineProperty(t,"default",{enumerable:!0,value:r}),2&e&&"string"!=typeof r)for(var n in r)l.d(t,n,function(e){return r[e]}.bind(null,n));return t},l.n=function(e){var r=e&&e.__esModule?function(){return e.default}:function(){return e};return l.d(r,"a",r),r},l.o=function(e,r){return Object.prototype.hasOwnProperty.call(e,r)},l.p="https://tab.gladly.io/newtab/";var r=window.webpackJsonp=window.webpackJsonp||[],n=r.push.bind(r);r.push=e,r=r.slice();for(var o=0;o<r.length;o++)e(r[o]);var s=n;f()}([])</script><script src="./Sign in - Tab for a Cause - Tab for a Cause_files/searchQuery.38043d99.chunk.js.download"></script><script>!function(u){function e(e){for(var t,r,n=e[0],o=e[1],a=e[2],c=0,f=[];c<n.length;c++)r=n[c],s[r]&&f.push(s[r][0]),s[r]=0;for(t in o)Object.prototype.hasOwnProperty.call(o,t)&&(u[t]=o[t]);for(h&&h(e);f.length;)f.shift()();return l.push.apply(l,a||[]),i()}function i(){for(var e,t=0;t<l.length;t++){for(var r=l[t],n=!0,o=1;o<r.length;o++){var a=r[o];0!==s[a]&&(n=!1)}n&&(l.splice(t--,1),e=p(p.s=r[0]))}return e}var r={},d={5:0},s={5:0},l=[];function p(e){if(r[e])return r[e].exports;var t=r[e]={i:e,l:!1,exports:{}};return u[e].call(t.exports,t,t.exports,p),t.l=!0,t.exports}p.e=function(l){var e=[];d[l]?e.push(d[l]):0!==d[l]&&{13:1}[l]&&e.push(d[l]=new Promise(function(e,n){for(var t="static/css/"+({}[l]||l)+"."+{0:"31d6cfe0",1:"31d6cfe0",2:"31d6cfe0",3:"31d6cfe0",9:"31d6cfe0",10:"31d6cfe0",11:"31d6cfe0",12:"31d6cfe0",13:"c2601247",14:"31d6cfe0",15:"31d6cfe0",16:"31d6cfe0",17:"31d6cfe0",18:"31d6cfe0",19:"31d6cfe0",20:"31d6cfe0",21:"31d6cfe0"}[l]+".chunk.css",o=p.p+t,r=document.getElementsByTagName("link"),a=0;a<r.length;a++){var c=(u=r[a]).getAttribute("data-href")||u.getAttribute("href");if("stylesheet"===u.rel&&(c===t||c===o))return e()}var f=document.getElementsByTagName("style");for(a=0;a<f.length;a++){var u;if((c=(u=f[a]).getAttribute("data-href"))===t||c===o)return e()}var i=document.createElement("link");i.rel="stylesheet",i.type="text/css",i.onload=e,i.onerror=function(e){var t=e&&e.target&&e.target.src||o,r=new Error("Loading CSS chunk "+l+" failed.\n("+t+")");r.request=t,delete d[l],i.parentNode.removeChild(i),n(r)},i.href=o,document.getElementsByTagName("head")[0].appendChild(i)}).then(function(){d[l]=0}));var r=s[l];if(0!==r)if(r)e.push(r[2]);else{var t=new Promise(function(e,t){r=s[l]=[e,t]});e.push(r[2]=t);var n,a=document.createElement("script");a.charset="utf-8",a.timeout=120,p.nc&&a.setAttribute("nonce",p.nc),a.src=p.p+"static/js/"+({}[l]||l)+"."+{0:"427a4c8e",1:"77af1e88",2:"05ef611a",3:"56b34785",9:"83231635",10:"9af88698",11:"76f1b5a3",12:"532ef3aa",13:"3b057ac7",14:"6236c53c",15:"41419c2d",16:"a4b6c723",17:"25ba916a",18:"2cbb2ffc",19:"5d75d225",20:"0afa0594",21:"0500ce83"}[l]+".chunk.js",n=function(e){a.onerror=a.onload=null,clearTimeout(c);var t=s[l];if(0!==t){if(t){var r=e&&("load"===e.type?"missing":e.type),n=e&&e.target&&e.target.src,o=new Error("Loading chunk "+l+" failed.\n("+r+": "+n+")");o.type=r,o.request=n,t[1](o)}s[l]=void 0}};var c=setTimeout(function(){n({type:"timeout",target:a})},12e4);a.onerror=a.onload=n,document.head.appendChild(a)}return Promise.all(e)},p.m=u,p.c=r,p.d=function(e,t,r){p.o(e,t)||Object.defineProperty(e,t,{enumerable:!0,get:r})},p.r=function(e){"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(e,"__esModule",{value:!0})},p.t=function(t,e){if(1&e&&(t=p(t)),8&e)return t;if(4&e&&"object"==typeof t&&t&&t.__esModule)return t;var r=Object.create(null);if(p.r(r),Object.defineProperty(r,"default",{enumerable:!0,value:t}),2&e&&"string"!=typeof t)for(var n in t)p.d(r,n,function(e){return t[e]}.bind(null,n));return r},p.n=function(e){var t=e&&e.__esModule?function(){return e.default}:function(){return e};return p.d(t,"a",t),t},p.o=function(e,t){return Object.prototype.hasOwnProperty.call(e,t)},p.p="https://tab.gladly.io/newtab/",p.oe=function(e){throw console.error(e),e};var t=window.webpackJsonp=window.webpackJsonp||[],n=t.push.bind(t);t.push=e,t=t.slice();for(var o=0;o<t.length;o++)e(t[o]);var h=n;i()}([])</script><script src="./Sign in - Tab for a Cause - Tab for a Cause_files/8.9e91c908.chunk.js.download"></script><iframe name="__tcfapiLocator" style="display: none;" src="./Sign in - Tab for a Cause - Tab for a Cause_files/saved_resource.html"></iframe><script src="./Sign in - Tab for a Cause - Tab for a Cause_files/index.9fe635fe.chunk.js.download"></script><iframe src="./Sign in - Tab for a Cause - Tab for a Cause_files/container.html" style="visibility: hidden; display: none;"></iframe><div id="torrent-scanner-popup" style="display: none;"></div><iframe src="./Sign in - Tab for a Cause - Tab for a Cause_files/iu3.html" style="display: none;"></iframe><iframe src="./Sign in - Tab for a Cause - Tab for a Cause_files/aframe.html" width="0" height="0" style="display: none;"></iframe></body><grammarly-desktop-integration data-grammarly-shadow-root="true"></grammarly-desktop-integration></html>
